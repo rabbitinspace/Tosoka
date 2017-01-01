@@ -1,6 +1,11 @@
 import Foundation
 
-/*
+/**
+ Full table declaration can be found here: https://www.ietf.org/rfc/rfc4648.txt 
+ on page 7
+ 
+ Here is it in less readable format:
+ 
  "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
  "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
  "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d",
@@ -9,10 +14,13 @@ import Foundation
  "y", "z", "0", "1", "2", "3", "4", "5", "6", "7",
  "8", "9", "-", "_"
  */
+
+/// Base64 encoding/decoding table that is URL safe
 public struct URLSafeCodingAlphabet {
 
     // MARK: - Private properties
 
+    /// Encoding table
     fileprivate let encodingTable: [UInt8] = [
         65, 66, 67, 68, 69, 70, 71, 72, 73, 74,
         75, 76, 77, 78, 79, 80, 81, 82, 83, 84,
@@ -23,6 +31,7 @@ public struct URLSafeCodingAlphabet {
         56, 57, 45, 95,
     ]
 
+    /// Decoding table
     fileprivate let decodingTable: [UInt8: UInt8] = [
         65: 0, 66: 1, 67: 2, 68: 3, 69: 4,
         70: 5, 71: 6, 72: 7, 73: 8, 74: 9,
@@ -47,14 +56,14 @@ public struct URLSafeCodingAlphabet {
 // MARK: - CodingAlphabet
 
 extension URLSafeCodingAlphabet: CodingAlphabet {
-    public func encode(value: UInt8) -> UInt8 {
-        let value = Int(value)
-        assert(value < encodingTable.count)
-        return encodingTable[value]
+    public func encode(byte: UInt8) -> UInt8 {
+        let byte = Int(byte)
+        assert(byte < encodingTable.count)
+        return encodingTable[byte]
     }
 
-    public func decode(value: UInt8) -> UInt8? {
-        return decodingTable[value]
+    public func decode(byte: UInt8) -> UInt8? {
+        return decodingTable[byte]
     }
 }
 

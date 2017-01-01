@@ -1,26 +1,37 @@
 import Foundation
 
-public struct Base64<Alphabet: CodingAlphabet> {
+/// A base64 encoder/decoder
+///
+/// This implementation conforms to rfc4648
+public struct Base64<Alphabet: CodingAlphabet>: Base64Codable {
 
     // MARK: - Private properties
 
+    /// Base64 encoding/decoding table
     private let coder: Alphabet
+    
+    /// Says that a padding bytes should be added to the end of encoded data
+    private let isPaddingEnabled: Bool
 
     // MARK: - Init & deinit
 
-    public init(coder: Alphabet.Type) {
+    /// Designated initializer
+    ///
+    /// - Parameters:
+    ///   - coder: base64 encoding/decoding table
+    ///   - isPaddingEnabled: Says that a padding bytes should be added to the end of encoded data
+    public init(coder: Alphabet.Type, isPaddingEnabled: Bool = true) {
         self.coder = coder.init()
+        self.isPaddingEnabled = isPaddingEnabled
     }
 
     // MARK: - Encoding
 
-    public func encode(_ data: Data, withPadding isPaddingEnabled: Bool = false) -> Data {
+    public func encode(_ data: Data) -> Data {
         let finalQuantumLength = data.count % 3
         let encodedLength = (data.count / 3) * 4 + (finalQuantumLength > 0 ? 4 : 0)
         var encoded = Data(capacity: encodedLength)
         var offset = 0
-
-        print(data.count)
 
         while offset + 2 < data.count {
             let firstByte = data[offset] >> 2
@@ -28,10 +39,10 @@ public struct Base64<Alphabet: CodingAlphabet> {
             let thirdByte = ((data[offset + 1] & 0b00001111) << 2) | ((data[offset + 2] & 0b11000000) >> 6)
             let fourthByte = data[offset + 2] & 0b00111111
 
-            encoded.append(coder.encode(value: firstByte))
-            encoded.append(coder.encode(value: secondByte))
-            encoded.append(coder.encode(value: thirdByte))
-            encoded.append(coder.encode(value: fourthByte))
+            encoded.append(coder.encode(byte: firstByte))
+            encoded.append(coder.encode(byte: secondByte))
+            encoded.append(coder.encode(byte: thirdByte))
+            encoded.append(coder.encode(byte: fourthByte))
 
             offset += 3
         }
@@ -43,17 +54,17 @@ public struct Base64<Alphabet: CodingAlphabet> {
             // Final quantum is 8 bits long
             let firstGroup = data[offset] >> 2
             let secondGroup = (data[offset] & 0b11) << 4
-            encoded.append(coder.encode(value: firstGroup))
-            encoded.append(coder.encode(value: secondGroup))
+            encoded.append(coder.encode(byte: firstGroup))
+            encoded.append(coder.encode(byte: secondGroup))
 
         case 2:
             // Final quantum is 16 bits long
             let firstGroup = data[offset] >> 2
             let secondGroup = ((data[offset] & 0b11)) << 4 | ((data[offset + 1] & 0b11110000) >> 4)
             let thirdGroup = (data[offset + 1] & 0b00001111) << 2
-            encoded.append(coder.encode(value: firstGroup))
-            encoded.append(coder.encode(value: secondGroup))
-            encoded.append(coder.encode(value: thirdGroup))
+            encoded.append(coder.encode(byte: firstGroup))
+            encoded.append(coder.encode(byte: secondGroup))
+            encoded.append(coder.encode(byte: thirdGroup))
 
         default:
             assert(data.count == offset)
@@ -71,10 +82,6 @@ public struct Base64<Alphabet: CodingAlphabet> {
     // MARK: - Decoding
 
     public func decode(_ data: Data) throws -> Data {
-        guard data.count > 0 else {
-            return data
-        }
-
         var paddingCount = 0
         for byte in data.reversed() { // data.reversed() is O(1)
             guard byte == coder.padding else {
@@ -91,18 +98,19 @@ public struct Base64<Alphabet: CodingAlphabet> {
         let hasIncompleteQuantum = paddingCount > 0 || data.count % 4 != 0
         let quantumsLengthExcludingIncomplete = data.count - paddingCount - (data.count - paddingCount) % 4
         let incompleteQuantumLength = data.count - quantumsLengthExcludingIncomplete - paddingCount
+        
         assert([0, 2, 3].contains(incompleteQuantumLength))
 
         let decodedDataLength = quantumsLengthExcludingIncomplete / 4 * 3 + max(incompleteQuantumLength - 1, 0)
         let dataLengthWithoutPadding = data.count - paddingCount
-        var decoded = Data(capacity: decodedDataLength) // TODO: Check
+        var decoded = Data(capacity: decodedDataLength) 
         var offset = 0
 
         while offset + 3 < dataLengthWithoutPadding {
-            let firstPart: UInt8 = try coder.decode(value: data[offset])
-            let secondPart: UInt8 = try coder.decode(value: data[offset + 1])
-            let thirdPart: UInt8 = try coder.decode(value: data[offset + 2])
-            let fourthPart: UInt8 = try coder.decode(value: data[offset + 3])
+            let firstPart: UInt8 = try coder.decode(byte: data[offset])
+            let secondPart: UInt8 = try coder.decode(byte: data[offset + 1])
+            let thirdPart: UInt8 = try coder.decode(byte: data[offset + 2])
+            let fourthPart: UInt8 = try coder.decode(byte: data[offset + 3])
             
             let firstByte = (firstPart << 2) | (secondPart >> 4)
             let secondByte = (secondPart << 4) | (thirdPart >> 2)
@@ -123,16 +131,16 @@ public struct Base64<Alphabet: CodingAlphabet> {
         // Review it later
         switch incompleteQuantumLength {
         case 2:
-            let firstPart: UInt8 = try coder.decode(value: data[offset])
-            let secondPart: UInt8 = try coder.decode(value: data[offset + 1])
+            let firstPart: UInt8 = try coder.decode(byte: data[offset])
+            let secondPart: UInt8 = try coder.decode(byte: data[offset + 1])
             
             let byte = (firstPart << 2) | (secondPart >> 4)
             decoded.append(byte)
 
         case 3:
-            let firstPart: UInt8 = try coder.decode(value: data[offset])
-            let secondPart: UInt8 = try coder.decode(value: data[offset + 1])
-            let thirdPart: UInt8 = try coder.decode(value: data[offset + 2])
+            let firstPart: UInt8 = try coder.decode(byte: data[offset])
+            let secondPart: UInt8 = try coder.decode(byte: data[offset + 1])
+            let thirdPart: UInt8 = try coder.decode(byte: data[offset + 2])
             
             let firstByte = (firstPart << 2) | (secondPart >> 4)
             let secondByte = (secondPart << 4) | (thirdPart >> 2)
@@ -140,23 +148,18 @@ public struct Base64<Alphabet: CodingAlphabet> {
             decoded.append(secondByte)
 
         default:
-            assertionFailure()
+            assert(data.count == offset)
         }
 
         return decoded
     }
 }
 
-// TODO: Move to `Base64` declaration in swift 3.1
-public enum Base64Error: Error {
-    case badData
-}
-
 // MARK: - Private extensions
 
 private extension CodingAlphabet {
-    func decode(value: UInt8) throws -> UInt8 {
-        guard let decodedByte = decode(value: value) else {
+    func decode(byte: UInt8) throws -> UInt8 {
+        guard let decodedByte = decode(byte: byte) else {
             throw Base64Error.badData
         }
         

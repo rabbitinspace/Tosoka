@@ -1,76 +1,62 @@
 import XCTest
 @testable import Tosoka
 
-class Base64EncodingTests: XCTestCase {
-    
-    // MARK: - Properties
-    
-    var coder: Base64<URLSafeCodingAlphabet>!
-    
-    // MARK: - Preparations
-    
-    override func setUp() {
-        super.setUp()
-        
-        coder = Base64(coder: URLSafeCodingAlphabet.self)
-    }
+class Base64URLSafeEncodingTests: XCTestCase {
     
     // MARK: - Tests
     
     func testEncodingWithoutPadding() {
         let input = "any carnal pleasur"
         let output = "YW55IGNhcm5hbCBwbGVhc3Vy"
-        let length = 24
 
-        XCTAssertEqual(encode(input, withExpectedOutputLength: length, isPaddingEnabled: true), output)
-
-        XCTAssertEqual(encode(input, withExpectedOutputLength: length, isPaddingEnabled: false), output)
+        XCTAssertEqual(encode(input, isPaddingEnabled: true), output)
+        XCTAssertEqual(encode(input, isPaddingEnabled: false), output)
     }
     
     func testEncodingWithOnePadding() {
         XCTAssertEqual(
-            encode("any carnal pleasure.", withExpectedOutputLength: 28, isPaddingEnabled: true),
+            encode("any carnal pleasure.", isPaddingEnabled: true),
             "YW55IGNhcm5hbCBwbGVhc3VyZS4="
         )
 
         XCTAssertEqual(
-            encode("any carnal pleasu", withExpectedOutputLength: 24, isPaddingEnabled: true),
+            encode("any carnal pleasu", isPaddingEnabled: true),
             "YW55IGNhcm5hbCBwbGVhc3U="
         )
     }
     
     func testEncodingWithTwoPadding() {
         XCTAssertEqual(
-            encode("any carnal pleasure", withExpectedOutputLength: 28, isPaddingEnabled: true),
+            encode("any carnal pleasure", isPaddingEnabled: true),
             "YW55IGNhcm5hbCBwbGVhc3VyZQ=="
         )
 
         XCTAssertEqual(
-            encode("any carnal pleas", withExpectedOutputLength: 24, isPaddingEnabled: true),
+            encode("any carnal pleas", isPaddingEnabled: true),
             "YW55IGNhcm5hbCBwbGVhcw=="
         )
     }
     
     func testEncodingWithOneDisabledPadding() {
         XCTAssertEqual(
-            encode("any carnal pleasure.", withExpectedOutputLength: 27, isPaddingEnabled: false),
+            encode("any carnal pleasure.", isPaddingEnabled: false),
             "YW55IGNhcm5hbCBwbGVhc3VyZS4"
         )
 
         XCTAssertEqual(
-            encode("any carnal pleasu", withExpectedOutputLength: 23, isPaddingEnabled: false),
+            encode("any carnal pleasu", isPaddingEnabled: false),
             "YW55IGNhcm5hbCBwbGVhc3U"
         )
     }
     
     func testEncodingWithTwoDisabledPadding() {
         XCTAssertEqual(
-            encode("any carnal pleasure", withExpectedOutputLength: 26, isPaddingEnabled: false),
+            encode("any carnal pleasure", isPaddingEnabled: false),
             "YW55IGNhcm5hbCBwbGVhc3VyZQ"
         )
 
         XCTAssertEqual(
-            encode("any carnal pleas", withExpectedOutputLength: 22, isPaddingEnabled: false),
+            encode("any carnal pleas", isPaddingEnabled: false),
             "YW55IGNhcm5hbCBwbGVhcw"
         )
     }
@@ -79,94 +65,95 @@ class Base64EncodingTests: XCTestCase {
 
     func testStandardTestVectorsWithPadding() {
         XCTAssertEqual(
-            encode("", withExpectedOutputLength: 0, isPaddingEnabled: true),
+            encode("", isPaddingEnabled: true),
             ""
         )
         
         XCTAssertEqual(
-            encode("f", withExpectedOutputLength: 4, isPaddingEnabled: true),
+            encode("f", isPaddingEnabled: true),
             "Zg=="
         )
 
         XCTAssertEqual(
-            encode("fo", withExpectedOutputLength: 4, isPaddingEnabled: true),
+            encode("fo", isPaddingEnabled: true),
             "Zm8="
         )
 
         XCTAssertEqual(
-            encode("foo", withExpectedOutputLength: 4, isPaddingEnabled: true),
+            encode("foo", isPaddingEnabled: true),
             "Zm9v"
         )
 
         XCTAssertEqual(
-            encode("foob", withExpectedOutputLength: 8, isPaddingEnabled: true),
+            encode("foob", isPaddingEnabled: true),
             "Zm9vYg=="
         )
 
         XCTAssertEqual(
-            encode("fooba", withExpectedOutputLength: 8, isPaddingEnabled: true),
+            encode("fooba", isPaddingEnabled: true),
             "Zm9vYmE="
         )
 
         XCTAssertEqual(
-            encode("foobar", withExpectedOutputLength: 8, isPaddingEnabled: true),
+            encode("foobar", isPaddingEnabled: true),
             "Zm9vYmFy"
         )
     }
 
     func testStandardTestVectorsWithoutPadding() {
         XCTAssertEqual(
-            encode("", withExpectedOutputLength: 0, isPaddingEnabled: false),
+            encode("", isPaddingEnabled: false),
             ""
         )
         
         XCTAssertEqual(
-            encode("f", withExpectedOutputLength: 2, isPaddingEnabled: false),
+            encode("f", isPaddingEnabled: false),
             "Zg"
         )
 
         XCTAssertEqual(
-            encode("fo", withExpectedOutputLength: 3, isPaddingEnabled: false),
+            encode("fo", isPaddingEnabled: false),
             "Zm8"
         )
 
         XCTAssertEqual(
-            encode("foo", withExpectedOutputLength: 4, isPaddingEnabled: false),
+            encode("foo", isPaddingEnabled: false),
             "Zm9v"
         )
 
         XCTAssertEqual(
-            encode("foob", withExpectedOutputLength: 6, isPaddingEnabled: false),
+            encode("foob", isPaddingEnabled: false),
             "Zm9vYg"
         )
 
         XCTAssertEqual(
-            encode("fooba", withExpectedOutputLength: 7, isPaddingEnabled: false),
+            encode("fooba", isPaddingEnabled: false),
             "Zm9vYmE"
         )
 
         XCTAssertEqual(
-            encode("foobar", withExpectedOutputLength: 8, isPaddingEnabled: false),
+            encode("foobar", isPaddingEnabled: false),
             "Zm9vYmFy"
         )
     }
     
     // MARK: - Private
     
-    private func encode(_ string: String, withExpectedOutputLength expectedOutputLength: Int, isPaddingEnabled: Bool) -> String? {
+    private func encode(_ string: String, isPaddingEnabled: Bool) -> String? {
         guard let data = string.data(using: .utf8) else {
             XCTFail()
             return nil
         }
         
-        let result = coder.encode(data, withPadding: isPaddingEnabled)
-        XCTAssertEqual(result.count, expectedOutputLength)
+        let coder = Base64(coder: URLSafeCodingAlphabet.self, isPaddingEnabled: isPaddingEnabled)
+        
+        let result = coder.encode(data)
         return String(data: result, encoding: .utf8)
     }
     
     // MARK: - All tests
     
-    static var allTests : [(String, (Base64EncodingTests) -> () throws -> Void)] {
+    static var allTests : [(String, (Base64URLSafeEncodingTests) -> () throws -> Void)] {
         return [
             ("testEncodingWithoutPadding", testEncodingWithoutPadding),
             ("testEncodingWithOnePadding", testEncodingWithOnePadding),
