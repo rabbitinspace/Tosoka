@@ -6,7 +6,7 @@ public protocol CodingAlphabet {
     init()
 
     func encode(value: UInt8) -> UInt8
-    func decode(value: UInt8) -> UInt8
+    func decode(value: UInt8) -> UInt8?
 }
 
 extension CodingAlphabet {

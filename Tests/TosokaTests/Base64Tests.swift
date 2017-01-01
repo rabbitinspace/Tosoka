@@ -17,28 +17,84 @@ class Base64Tests: XCTestCase {
     
     // MARK: - Encoding
     
+    func testEncodingEmptyString() {
+        XCTAssertEqual(
+            encode("", withExpectedOutputLength: 0, isPaddingEnabled: true),
+            ""
+        )
+
+        XCTAssertEqual(
+            encode("", withExpectedOutputLength: 0, isPaddingEnabled: false),
+            ""
+        )
+    }
+    
     func testEncodingWithoutPadding() {
-        XCTAssertEqual(encode("any carnal pleasur", withExpectedOutputLenght: 24), "YW55IGNhcm5hbCBwbGVhc3Vy")
+        let input = "any carnal pleasur"
+        let output = "YW55IGNhcm5hbCBwbGVhc3Vy"
+        let length = 24
+
+        XCTAssertEqual(encode(input, withExpectedOutputLength: length, isPaddingEnabled: true), output)
+
+        XCTAssertEqual(encode(input, withExpectedOutputLength: length, isPaddingEnabled: false), output)
     }
     
     func testEncodingWithOnePadding() {
-        XCTAssertEqual(encode("any carnal pleasure.", withExpectedOutputLenght: 28), "YW55IGNhcm5hbCBwbGVhc3VyZS4=")
-        XCTAssertEqual(encode("any carnal pleasu", withExpectedOutputLenght: 24), "YW55IGNhcm5hbCBwbGVhc3U=")
+        XCTAssertEqual(
+            encode("any carnal pleasure.", withExpectedOutputLength: 28, isPaddingEnabled: true),
+            "YW55IGNhcm5hbCBwbGVhc3VyZS4="
+        )
+
+        XCTAssertEqual(
+            encode("any carnal pleasu", withExpectedOutputLength: 24, isPaddingEnabled: true),
+            "YW55IGNhcm5hbCBwbGVhc3U="
+        )
     }
     
     func testEncodingWithTwoPaddings() {
-        XCTAssertEqual(encode("any carnal pleasure", withExpectedOutputLenght: 28), "YW55IGNhcm5hbCBwbGVhc3VyZQ==")
-        XCTAssertEqual(encode("any carnal pleas", withExpectedOutputLenght: 24), "YW55IGNhcm5hbCBwbGVhcw==")
+        XCTAssertEqual(
+            encode("any carnal pleasure", withExpectedOutputLength: 28, isPaddingEnabled: true),
+            "YW55IGNhcm5hbCBwbGVhc3VyZQ=="
+        )
+
+        XCTAssertEqual(
+            encode("any carnal pleas", withExpectedOutputLength: 24, isPaddingEnabled: true),
+            "YW55IGNhcm5hbCBwbGVhcw=="
+        )
     }
     
-    private func encode(_ string: String, withExpectedOutputLenght expectedOutputLenght: Int) -> String? {
+    func testEncodingWithOneDisabledPadding() {
+        XCTAssertEqual(
+            encode("any carnal pleasure.", withExpectedOutputLength: 27, isPaddingEnabled: false),
+            "YW55IGNhcm5hbCBwbGVhc3VyZS4"
+        )
+
+        XCTAssertEqual(
+            encode("any carnal pleasu", withExpectedOutputLength: 23, isPaddingEnabled: false),
+            "YW55IGNhcm5hbCBwbGVhc3U"
+        )
+    }
+    
+    func testEncodingWithTwoDisabledPaddings() {
+        XCTAssertEqual(
+            encode("any carnal pleasure", withExpectedOutputLength: 26, isPaddingEnabled: false)
+            , "YW55IGNhcm5hbCBwbGVhc3VyZQ"
+        )
+
+        XCTAssertEqual(
+            encode("any carnal pleas", withExpectedOutputLength: 22, isPaddingEnabled: false),
+            "YW55IGNhcm5hbCBwbGVhcw"
+        )
+    }
+    
+    private func encode(_ string: String, withExpectedOutputLength expectedOutputLength: Int, isPaddingEnabled: Bool) -> String? {
         guard let data = string.data(using: .utf8) else {
             XCTFail()
             return nil
         }
         
-        let result = coder.encode(data)
-        XCTAssertEqual(result.count, expectedOutputLenght)
+        let result = coder.encode(data, withPadding: isPaddingEnabled)
+        XCTAssertEqual(result.count, expectedOutputLength)
         return String(data: result, encoding: .utf8)
     }
     

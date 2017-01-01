@@ -1,18 +1,18 @@
 import Foundation
 
+/*
+ "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
+ "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
+ "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d",
+ "e", "f", "g", "h", "i", "j", "k", "l", "m", "n",
+ "o", "p", "q", "r", "s", "t", "u", "v", "w", "x",
+ "y", "z", "0", "1", "2", "3", "4", "5", "6", "7",
+ "8", "9", "-", "_"
+ */
 public struct URLSafeCodingAlphabet {
 
     // MARK: - Private properties
 
-    /*
-     "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
-     "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
-     "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d",
-     "e", "f", "g", "h", "i", "j", "k", "l", "m", "n",
-     "o", "p", "q", "r", "s", "t", "u", "v", "w", "x",
-     "y", "z", "0", "1", "2", "3", "4", "5", "6", "7",
-     "8", "9", "-", "_"
-     */
     fileprivate let encodingTable: [UInt8] = [
         65, 66, 67, 68, 69, 70, 71, 72, 73, 74,
         75, 76, 77, 78, 79, 80, 81, 82, 83, 84,
@@ -41,8 +41,7 @@ public struct URLSafeCodingAlphabet {
 
     // MARK: - Init & deinit
 
-    public init() {
-    }
+    public init() { }
 }
 
 // MARK: - CodingAlphabet
@@ -54,11 +53,8 @@ extension URLSafeCodingAlphabet: CodingAlphabet {
         return encodingTable[value]
     }
 
-    public func decode(value: UInt8) -> UInt8 {
-        return value
-        //        let value = Int(value)
-        //        assert(value < URLSafeCodingAlphabet.codingTable.count)
-        //        return
+    public func decode(value: UInt8) -> UInt8? {
+        return decodingTable[value]
     }
 }
 
