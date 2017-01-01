@@ -77,9 +77,11 @@ public struct Base64<Alphabet: CodingAlphabet> {
 
         var paddingCount = 0
         for byte in data.reversed() { // data.reversed() is O(1)
-            if byte == coder.padding {
-                paddingCount += 1
+            guard byte == coder.padding else {
+                break
             }
+            
+            paddingCount += 1
         }
 
         if (paddingCount > 0 && data.count % 4 != 0) || paddingCount > 2  {
@@ -96,14 +98,19 @@ public struct Base64<Alphabet: CodingAlphabet> {
         var decoded = Data(capacity: decodedDataLength) // TODO: Check
         var offset = 0
 
-        while offset + 4 < dataLengthWithoutPadding {
-            let firstByte = (data[offset] << 2) | (data[offset + 1] >> 4)
-            let secondByte = (data[offset + 1] << 4) | (data[offset + 2] >> 2)
-            let thirdByte = (data[offset + 2] << 6) | data[offset + 3]
+        while offset + 3 < dataLengthWithoutPadding {
+            let firstPart: UInt8 = try coder.decode(value: data[offset])
+            let secondPart: UInt8 = try coder.decode(value: data[offset + 1])
+            let thirdPart: UInt8 = try coder.decode(value: data[offset + 2])
+            let fourthPart: UInt8 = try coder.decode(value: data[offset + 3])
+            
+            let firstByte = (firstPart << 2) | (secondPart >> 4)
+            let secondByte = (secondPart << 4) | (thirdPart >> 2)
+            let thirdByte = (thirdPart << 6) | fourthPart
 
-            try decoded.append(firstByte, decodedWith: coder)
-            try decoded.append(secondByte, decodedWith: coder)
-            try decoded.append(thirdByte, decodedWith: coder)
+            decoded.append(firstByte)
+            decoded.append(secondByte)
+            decoded.append(thirdByte)
 
             offset += 4
         }
@@ -116,14 +123,21 @@ public struct Base64<Alphabet: CodingAlphabet> {
         // Review it later
         switch incompleteQuantumLength {
         case 2:
-            let byte = (data[offset] << 2) | (data[offset + 1] >> 4)
-            try decoded.append(byte, decodedWith: coder)
+            let firstPart: UInt8 = try coder.decode(value: data[offset])
+            let secondPart: UInt8 = try coder.decode(value: data[offset + 1])
+            
+            let byte = (firstPart << 2) | (secondPart >> 4)
+            decoded.append(byte)
 
         case 3:
-            let firstByte = (data[offset] << 2) | (data[offset + 1] >> 4)
-            let secondByte = (data[offset + 1] << 4) | (data[offset + 2] >> 2)
-            try decoded.append(firstByte, decodedWith: coder)
-            try decoded.append(secondByte, decodedWith: coder)
+            let firstPart: UInt8 = try coder.decode(value: data[offset])
+            let secondPart: UInt8 = try coder.decode(value: data[offset + 1])
+            let thirdPart: UInt8 = try coder.decode(value: data[offset + 2])
+            
+            let firstByte = (firstPart << 2) | (secondPart >> 4)
+            let secondByte = (secondPart << 4) | (thirdPart >> 2)
+            decoded.append(firstByte)
+            decoded.append(secondByte)
 
         default:
             assertionFailure()
@@ -140,12 +154,12 @@ public enum Base64Error: Error {
 
 // MARK: - Private extensions
 
-private extension Data {
-    mutating func append<Alphabet: CodingAlphabet>(_ byte: UInt8, decodedWith alphabet: Alphabet) throws {
-        guard let decodedByte = alphabet.decode(value: byte) else {
+private extension CodingAlphabet {
+    func decode(value: UInt8) throws -> UInt8 {
+        guard let decodedByte = decode(value: value) else {
             throw Base64Error.badData
         }
-
-        append(decodedByte)
+        
+        return decodedByte
     }
 }
