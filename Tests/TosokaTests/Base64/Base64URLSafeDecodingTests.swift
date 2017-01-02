@@ -155,4 +155,18 @@ class Base64URLSafeDecodingTests: XCTestCase {
         
         return String(data: result, encoding: .utf8)
     }
+    
+    // MARK: - All tests
+    
+    static var allTests : [(String, (Base64URLSafeDecodingTests) -> () throws -> Void)] {
+        return [
+            ("testDecodingWithoutPadding", testDecodingWithoutPadding),
+            ("testDecodingWithOnePadding", testDecodingWithOnePadding),
+            ("testDecodingWithTwoPadding", testDecodingWithTwoPadding),
+            ("testDecodingWithOneDisabledPadding", testDecodingWithOneDisabledPadding),
+            ("testDecodingWithTwoDisabledPadding", testDecodingWithTwoDisabledPadding),
+            ("testStandardTestVectorsWithPadding", testStandardTestVectorsWithPadding),
+            ("testStandardTestVectorsWithoutPadding", testStandardTestVectorsWithoutPadding),
+        ]
+    }
 }

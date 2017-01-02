@@ -7,7 +7,7 @@ class JSONBase64Tests: XCTestCase {
     // MARK: - Properties
     
     var base64Coder: Base64<URLSafeCodingAlphabet>!
-    var jsonCoder: JSONCoder!
+    var jsonCoder: JSONCoding!
     
     // MARK: - Preparations
     
@@ -80,9 +80,9 @@ class JSONBase64Tests: XCTestCase {
         )
     }
     
-    // MARK: - Base64 encoding/decoding
+    // MARK: - Private
     
-    // from rfc7515, Appendix C
+    // base64 encoding from rfc7515, Appendix C
     private func encode(_ data: Data) -> String {
         let encodedString = data.base64EncodedString().components(separatedBy: "=")[0]
         return encodedString
@@ -90,7 +90,7 @@ class JSONBase64Tests: XCTestCase {
             .replacingOccurrences(of: "/", with: "_")
     }
     
-    // from rfc7515, Appendix C
+    // base64 decoding from rfc7515, Appendix C
     private func decode(_ string: String) -> Data? {
         let encodedString = string
             .replacingOccurrences(of: "-", with: "+")
@@ -112,5 +112,13 @@ class JSONBase64Tests: XCTestCase {
         }
         
         return Data(base64Encoded: stringToDecode)
+    }
+    
+    // MARK: - All tests
+    
+    static var allTests : [(String, (JSONBase64Tests) -> () throws -> Void)] {
+        return [
+            ("testHeaderJSON", testHeaderJSON),
+        ]
     }
 }
