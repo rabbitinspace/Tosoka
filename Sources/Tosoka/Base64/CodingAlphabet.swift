@@ -5,7 +5,7 @@ public protocol CodingAlphabet {
     /// Padding byte
     var padding: UInt8 { get }
 
-    /// Default initializer
+    /// Creates an instance with default parameters
     init()
 
     /// Encodes given `byte` to base64 representation

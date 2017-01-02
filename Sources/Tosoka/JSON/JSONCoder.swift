@@ -1,6 +1,10 @@
 import Foundation
 
-
+/// Generic json encoder/decoder
+///
+/// - Note: JSONSerialization.jsonObject(with:options:) is still unimplemented in swift 3.0,
+/// but it is in swift 3.1
+/// - Todo: Replace with JSONSerialization in swift 3.1
 public struct JSONCoder: JSONCoding {
     public func makeData(with json: [String : Any]) -> Data? {
         #if os(macOS)
