@@ -1,7 +1,7 @@
 import Foundation
 
 
-public struct JSONCoder: JSONEncoder, JSONDecoder {
+public struct JSONCoder: JSONCoding {
     public func makeData(with json: [String : Any]) -> Data? {
         #if os(macOS)
             return try? JSONSerialization.data(withJSONObject: json, options: [])
