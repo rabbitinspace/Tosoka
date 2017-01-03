@@ -15,11 +15,14 @@ class JSONBase64Tests: XCTestCase {
         super.setUp()
         
         base64Coder = Base64(coder: URLSafeCodingAlphabet.self, isPaddingEnabled: false)
-        #if os(macOS)
-            jsonCoder = JSONCoder()
-        #else
-            jsonCoder = LinuxJSONCoder()
-        #endif
+        jsonCoder = JSONCoder()
+        
+        // TODO: - Remove comments if JSONSerialization works fine on swift3.1-dev
+//        #if os(macOS)
+//            jsonCoder = JSONCoder()
+//        #else
+//            jsonCoder = LinuxJSONCoder()
+//        #endif
     }
     
     // MARK: - Tests
