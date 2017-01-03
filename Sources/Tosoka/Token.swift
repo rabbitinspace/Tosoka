@@ -75,7 +75,7 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
         }
         
         let token = "\(encodedHeader).\(encodedPayload)"
-        guard let signature = (try self.signature.signingToken(token)).data(using: .utf8) else {
+        guard let signature = (try self.signature.signing(token)).data(using: .utf8) else {
             throw Error.encodingFailed
         }
         
@@ -115,40 +115,28 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
         }
         
         try validateSignature(signature, forHeader: parts[0], payload: parts[1])
-        try validatePayload(payload)
-        
         claims = payload
     }
     
     private func validateSignature(_ signature: String, forHeader header: String, payload: String) throws {
-        let expectedSignature = try self.signature.signingToken("\(header).\(payload)")
+        let expectedSignature = try self.signature.signing("\(header).\(payload)")
         guard signature == expectedSignature else {
             throw Error.corrupted
         }
-    }
-    
-    private func validatePayload(_ payload: [String: Any]) throws {
-        
     }
 }
 
 // MARK: - Operators
 
-infix operator ~>
-
-public extension Token {
+extension Token: ClaimReadable {
     public static func ~><T: Claim>(token: Token, claim: T.Type) -> T.Content? {
         return token.claims[claim.name] as? T.Content
     }
 }
 
-public extension Token {
+extension Token: ClaimWritable {
     public static func +=<T: Claim>(token: inout Token, claim: T) {
         token.claims[T.name] = claim.content
-    }
-
-    public static func +=<T: Claim>(token: inout Token, claims: [T]) {
-        claims.forEach { token += $0 }
     }
 }
 

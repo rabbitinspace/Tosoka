@@ -1,7 +1,7 @@
 import Foundation
 
-public protocol ClaimReadable {
-    associatedtype Content
+infix operator ~>
 
-    static var name: String { get }
+public protocol ClaimReadable {
+    static func ~><T: Claim>(token: Self, claim: T.Type) -> T.Content?
 }

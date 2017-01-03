@@ -32,7 +32,7 @@ extension Signature {
     
     // MARK: - Methods
     
-    func signingToken(_ token: String) throws -> String {
+    func signing(_ string: String) throws -> String {
         let engine: UnsafePointer<EVP_MD>
         let secretKey: String
         
@@ -46,7 +46,7 @@ extension Signature {
             engine = EVP_sha512()
         }
         
-        return try macString(token, withKey: secretKey, using: engine)
+        return try macString(string, withKey: secretKey, using: engine)
     }
     
     // MARK: - Private
