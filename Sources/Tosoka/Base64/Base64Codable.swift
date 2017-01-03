@@ -1,7 +1,7 @@
 import Foundation
 
-/// Describes abilities for base64 encoding/decoding
-public protocol Base64Codable {
+/// A generic base64 encoding/decoding
+public protocol Base64Coding {
     
     /// Encodes `data` to base64 representation
     ///

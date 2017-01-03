@@ -1,6 +1,6 @@
 import Foundation
 
-public final class Token<T: JSONCoding, U: Base64Codable> {
+public final class Token<T: JSONCoding, U: Base64Coding> {
     
     // MARK: - Pyblic types
     
@@ -8,6 +8,7 @@ public final class Token<T: JSONCoding, U: Base64Codable> {
         case encodingFailed
         case decodingFailed
         case signingFailed
+        case corrupted
     }
 
     // MARK: - Private properties
@@ -20,8 +21,8 @@ public final class Token<T: JSONCoding, U: Base64Codable> {
     
     private var header: [String: Any] {
         return [
-            "alg": signature.algorithm,
-            "typ": "JWT"
+            HeaderKey.algorithm: signature.algorithm,
+            HeaderKey.type: tokenType
         ]
     }
 
@@ -31,6 +32,11 @@ public final class Token<T: JSONCoding, U: Base64Codable> {
         self.signature = signature
         self.jsonCoder = jsonCoder
         self.base64Coder = base64Coder
+    }
+    
+    public convenience init(token: String, signature: Signature, jsonCoder: T, base64Coder: U) throws {
+        self.init(signature: signature, jsonCoder: jsonCoder, base64Coder: base64Coder)
+        try assembleFromToken(token)
     }
 
     // MARK: - Public subscripts
@@ -79,6 +85,51 @@ public final class Token<T: JSONCoding, U: Base64Codable> {
         
         return token.appending(".\(encodedSignature)")
     }
+    
+    // MARK: - Private
+    
+    private func assembleFromToken(_ token: String) throws {
+        let parts = token.components(separatedBy: ".")
+        guard parts.count == 3 else {
+            throw Error.corrupted
+        }
+        
+        guard let encodedHeader = parts[0].data(using: .utf8),
+            let encodedPayload = parts[1].data(using: .utf8),
+            let encodedSignature = parts[2].data(using: .utf8) else {
+                throw Error.decodingFailed
+        }
+        
+        let decodedHeader = try base64Coder.decode(encodedHeader)
+        let decodedPayload = try base64Coder.decode(encodedPayload)
+        let decodedSignature = try base64Coder.decode(encodedSignature)
+        
+        guard let header = jsonCoder.makeJSON(with: decodedHeader),
+            let payload = jsonCoder.makeJSON(with: decodedPayload),
+            let signature = String(data: decodedSignature, encoding: .utf8) else {
+                throw Error.decodingFailed
+        }
+        
+        guard (header[HeaderKey.algorithm] as? String) == self.signature.algorithm else {
+            throw Error.corrupted
+        }
+        
+        try validateSignature(signature, forHeader: parts[0], payload: parts[1])
+        try validatePayload(payload)
+        
+        claims = payload
+    }
+    
+    private func validateSignature(_ signature: String, forHeader header: String, payload: String) throws {
+        let expectedSignature = try self.signature.signingToken("\(header).\(payload)")
+        guard signature == expectedSignature else {
+            throw Error.corrupted
+        }
+    }
+    
+    private func validatePayload(_ payload: [String: Any]) throws {
+        
+    }
 }
 
 // MARK: - Operators
@@ -97,13 +148,27 @@ public extension Token {
     }
 
     public static func +=<T: Claim>(token: inout Token, claims: [T]) {
-        claims.forEach {
-            token += $0
-        }
+        claims.forEach { token += $0 }
     }
 }
 
 // MARK: - Private extensions
+
+private extension Token {
+    struct HeaderKey {
+        static var algorithm: String {
+            return "alg"
+        }
+        
+        static var type: String {
+            return "typ"
+        }
+    }
+    
+    var tokenType: String {
+        return "JWT"
+    }
+}
 
 private extension Data {
     var utf8String: String? {

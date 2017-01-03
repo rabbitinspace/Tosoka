@@ -3,7 +3,7 @@ import Foundation
 /// A base64 encoder/decoder
 ///
 /// This implementation conforms to rfc4648
-public struct Base64<Alphabet: CodingAlphabet>: Base64Codable {
+public struct Base64<Alphabet: CodingAlphabet>: Base64Coding {
 
     // MARK: - Private properties
 
