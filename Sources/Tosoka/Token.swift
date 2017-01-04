@@ -2,15 +2,6 @@ import Foundation
 
 public final class Token<T: JSONCoding, U: Base64Coding> {
     
-    // MARK: - Pyblic types
-    
-    public enum Error: Swift.Error {
-        case encodingFailed
-        case decodingFailed
-        case signingFailed
-        case corrupted
-    }
-
     // MARK: - Private properties
 
     private let signature: Signature
@@ -36,6 +27,7 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
     
     public convenience init(token: String, signature: Signature, jsonCoder: T, base64Coder: U) throws {
         self.init(signature: signature, jsonCoder: jsonCoder, base64Coder: base64Coder)
+        
         try assembleFromToken(token)
     }
 
@@ -66,21 +58,21 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
     public func build() throws -> String {
         guard let header = jsonCoder.makeData(with: header),
             let payload = jsonCoder.makeData(with: claims) else {
-                throw Error.encodingFailed
+                throw TokenError.encodingFailed
         }
         
         guard let encodedHeader = base64Coder.encode(header).utf8String,
             let encodedPayload = base64Coder.encode(payload).utf8String else {
-                throw Error.encodingFailed
+                throw TokenError.encodingFailed
         }
         
         let token = "\(encodedHeader).\(encodedPayload)"
         guard let signature = (try self.signature.signing(token)).data(using: .utf8) else {
-            throw Error.encodingFailed
+            throw TokenError.encodingFailed
         }
         
         guard let encodedSignature = base64Coder.encode(signature).utf8String else {
-            throw Error.encodingFailed
+            throw TokenError.encodingFailed
         }
         
         return token.appending(".\(encodedSignature)")
@@ -91,13 +83,13 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
     private func assembleFromToken(_ token: String) throws {
         let parts = token.components(separatedBy: ".")
         guard parts.count == 3 else {
-            throw Error.corrupted
+            throw TokenError.corrupted
         }
         
         guard let encodedHeader = parts[0].data(using: .utf8),
             let encodedPayload = parts[1].data(using: .utf8),
             let encodedSignature = parts[2].data(using: .utf8) else {
-                throw Error.decodingFailed
+                throw TokenError.decodingFailed
         }
         
         let decodedHeader = try base64Coder.decode(encodedHeader)
@@ -107,36 +99,66 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
         guard let header = jsonCoder.makeJSON(with: decodedHeader),
             let payload = jsonCoder.makeJSON(with: decodedPayload),
             let signature = String(data: decodedSignature, encoding: .utf8) else {
-                throw Error.decodingFailed
+                throw TokenError.decodingFailed
         }
         
         guard (header[HeaderKey.algorithm] as? String) == self.signature.algorithm else {
-            throw Error.corrupted
+            throw TokenError.corrupted
         }
         
         try validateSignature(signature, forHeader: parts[0], payload: parts[1])
+       
         claims = payload
+        
+        try validateClaims()
     }
     
     private func validateSignature(_ signature: String, forHeader header: String, payload: String) throws {
         let expectedSignature = try self.signature.signing("\(header).\(payload)")
         guard signature == expectedSignature else {
-            throw Error.corrupted
+            throw TokenError.corrupted
         }
     }
+    
+    private func validateClaims() throws {
+        if let expirationDate = self ~> Expiring.self {
+            guard expirationDate.isValid() else {
+                throw TokenError.expired
+            }
+        }
+        
+        if let notBeforeDate = self ~> NotBefore.self {
+            guard notBeforeDate.isValid() else {
+                throw TokenError.fromFuture
+            }
+        }
+    }
+}
+
+public enum TokenError: Swift.Error {
+    case encodingFailed
+    case decodingFailed
+    case signingFailed
+    case corrupted
+    case expired
+    case fromFuture
 }
 
 // MARK: - Operators
 
 extension Token: ClaimReadable {
-    public static func ~><T: Claim>(token: Token, claim: T.Type) -> T.Content? {
-        return token.claims[claim.name] as? T.Content
+    public static func ~><T: Claim>(token: Token, claim: T.Type) -> T? {
+        guard let rawValue = token.claims[claim.name] as? T.RawValue else {
+            return nil
+        }
+        
+        return T.init(rawValue: rawValue)
     }
 }
 
 extension Token: ClaimWritable {
     public static func +=<T: Claim>(token: inout Token, claim: T) {
-        token.claims[T.name] = claim.content
+        token.claims[T.name] = claim.rawValue
     }
 }
 
