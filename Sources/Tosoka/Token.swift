@@ -25,10 +25,10 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
         self.base64Coder = base64Coder
     }
     
-    public convenience init(token: String, signature: Signature, jsonCoder: T, base64Coder: U) throws {
+    public convenience init(token: String, for audience: Audience? = nil, signature: Signature, jsonCoder: T, base64Coder: U) throws {
         self.init(signature: signature, jsonCoder: jsonCoder, base64Coder: base64Coder)
         
-        try assembleFromToken(token)
+        try assembleFromToken(token, for: audience)
     }
 
     // MARK: - Public subscripts
@@ -80,7 +80,7 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
     
     // MARK: - Private
     
-    private func assembleFromToken(_ token: String) throws {
+    private func assembleFromToken(_ token: String, for audience: Audience?) throws {
         let parts = token.components(separatedBy: ".")
         guard parts.count == 3 else {
             throw TokenError.corrupted
@@ -102,15 +102,14 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
                 throw TokenError.decodingFailed
         }
         
+        claims = payload
+        
         guard (header[HeaderKey.algorithm] as? String) == self.signature.algorithm else {
             throw TokenError.corrupted
         }
         
         try validateSignature(signature, forHeader: parts[0], payload: parts[1])
-       
-        claims = payload
-        
-        try validateClaims()
+        try validateToken(indendedFor: audience)
     }
     
     private func validateSignature(_ signature: String, forHeader header: String, payload: String) throws {
@@ -120,7 +119,13 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
         }
     }
     
-    private func validateClaims() throws {
+    private func validateToken(indendedFor audience: Audience?) throws {
+        if let audience = audience {
+            guard let tokenAudience = self ~> Audience.self, tokenAudience.isValid(for: audience) else {
+                throw TokenError.invalidAudience
+            }
+        }
+        
         if let expirationDate = self ~> Expiring.self {
             guard expirationDate.isValid() else {
                 throw TokenError.expired
@@ -135,11 +140,12 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
     }
 }
 
-public enum TokenError: Swift.Error {
+public enum TokenError: Error {
     case encodingFailed
     case decodingFailed
     case signingFailed
     case corrupted
+    case invalidAudience
     case expired
     case fromFuture
 }

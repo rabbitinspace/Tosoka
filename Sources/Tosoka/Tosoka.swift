@@ -19,11 +19,11 @@ public final class Tosoka {
         actualToken = Token(signature: signature, jsonCoder: jsonCoder, base64Coder: base64Coder)
     }
     
-    public init(token: String, signature: Signature) throws {
+    public init(token: String, for audience: Audience? = nil, signature: Signature) throws {
         let jsonCoder = JSONCoder()
         let base64Coder = Base64(coder: URLSafeCodingAlphabet.self, isPaddingEnabled: false)
         
-        actualToken = try Token(token: token, signature: signature, jsonCoder: jsonCoder, base64Coder: base64Coder)
+        actualToken = try Token(token: token, for: audience, signature: signature, jsonCoder: jsonCoder, base64Coder: base64Coder)
     }
     
     public func encode() throws -> String {
