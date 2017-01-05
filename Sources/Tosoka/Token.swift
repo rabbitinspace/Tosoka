@@ -1,15 +1,23 @@
 import Foundation
 
+/// JSON web token
 public final class Token<T: JSONCoding, U: Base64Coding> {
     
     // MARK: - Private properties
-
+    
+    /// Token signing algorithm
     private let signature: Signature
+    
+    /// JSON encoder/decoder
     private let jsonCoder: T
+    
+    /// Base64 encoder/decoder
     private let base64Coder: U
     
+    /// Claims, associated with the token
     fileprivate var claims = [String: Any]()
     
+    /// JOSE header for the token
     private var header: [String: Any] {
         return [
             HeaderKey.algorithm: signature.algorithm,
@@ -19,42 +27,39 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
 
     // MARK: - Init & deinit
 
+    /// Creates instance of `self` with desired `signature` and json and base64 encoders/decoders
+    ///
+    /// - Parameters:
+    ///   - signature: algorithm for token signature
+    ///   - jsonCoder: json encoder/decoder
+    ///   - base64Coder: base64 encoder/decoder
     public init(signature: Signature, jsonCoder: T, base64Coder: U) {
         self.signature = signature
         self.jsonCoder = jsonCoder
         self.base64Coder = base64Coder
     }
     
+    /// Creates instance of `self` from encoded `token` intended for `audience` and signed with `signature`, using provided json/base64 encoders/decoders
+    ///
+    /// - Parameters:
+    ///   - token: string representation of already encoded token
+    ///   - audience: audience for which token is intended
+    ///   - signature: signature of the encoded token
+    ///   - jsonCoder: json encoder/decoder
+    ///   - base64Coder: base64 encoder/decoder
+    /// - Throws: `TokenError`, `Signature.SigningError`, `T` and `U`'s implementations errors
     public convenience init(token: String, for audience: Audience? = nil, signature: Signature, jsonCoder: T, base64Coder: U) throws {
         self.init(signature: signature, jsonCoder: jsonCoder, base64Coder: base64Coder)
         
         try assembleFromToken(token, for: audience)
     }
 
-    // MARK: - Public subscripts
-
-    public subscript(name: String) -> Any? {
-        get {
-            return claims[name]
-        }
-
-        set {
-            claims[name] = newValue
-        }
-    }
-
-    public subscript(claim: ReservedClaim) -> Any? {
-        get {
-            return self[claim.name]
-        }
-
-        set {
-            self[claim.name] = newValue
-        }
-    }
-    
     // MARK: - Public API
     
+    /// Returns a valid token that can be used for example in HTTP headers
+    ///
+    /// - Returns: Encoded and signed token
+    /// - Throws: `TokenError`, `Signature.SigningError`
     public func build() throws -> String {
         guard let header = jsonCoder.makeData(with: header),
             let payload = jsonCoder.makeData(with: claims) else {
@@ -80,6 +85,12 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
     
     // MARK: - Private
     
+    /// Builds up itself from encoded `token` intended for `audience`
+    ///
+    /// - Parameters:
+    ///   - token: encoded token
+    ///   - audience: audience, token is intended for
+    /// - Throws: `TokenError`, `Signature.SigningError`, `T` an `U`'s implementations errors
     private func assembleFromToken(_ token: String, for audience: Audience?) throws {
         let parts = token.components(separatedBy: ".")
         guard parts.count == 3 else {
@@ -112,6 +123,13 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
         try validateToken(indendedFor: audience)
     }
     
+    /// Validates `signature` for base64 encoded `header` and `payload`
+    ///
+    /// - Parameters:
+    ///   - signature: signature of a token
+    ///   - header: base64 encoded header of a token
+    ///   - payload: base64 encoded payload of a token
+    /// - Throws: `TokenError`, `Signature.SigningError`
     private func validateSignature(_ signature: String, forHeader header: String, payload: String) throws {
         let expectedSignature = try self.signature.signing("\(header).\(payload)")
         guard signature == expectedSignature else {
@@ -119,6 +137,10 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
         }
     }
     
+    /// Validates claims of a token which is intended for an `audience`
+    ///
+    /// - Parameter audience: audience, token is intended for
+    /// - Throws: `TokenError`
     private func validateToken(indendedFor audience: Audience?) throws {
         if let audience = audience {
             guard let tokenAudience = self ~> Audience.self, tokenAudience.isValid(for: audience) else {
@@ -140,17 +162,52 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
     }
 }
 
+// MARK: - Public types
+
+/// Encoding/decoding errors
+///
+/// - encodingFailed: error occured during encoding
+/// - decodingFailed: error occured during decoding
+/// - corrupted: token is corrupted or has bad signature
+/// - invalidAudience: token is intended for another audience
+/// - expired: token is expired
+/// - fromFuture: token's "not before" claim is after current date
 public enum TokenError: Error {
     case encodingFailed
     case decodingFailed
-    case signingFailed
     case corrupted
     case invalidAudience
     case expired
     case fromFuture
 }
 
-// MARK: - Operators
+// MARK: - Extensions
+
+// MARK: - ClaimAccessible
+
+extension Token: ClaimAccessible {
+    public subscript(name: String) -> Any? {
+        get {
+            return claims[name]
+        }
+        
+        set {
+            claims[name] = newValue
+        }
+    }
+    
+    public subscript(claim: ReservedClaim) -> Any? {
+        get {
+            return self[claim.name]
+        }
+        
+        set {
+            self[claim.name] = newValue
+        }
+    }
+}
+
+// MARK: - ClaimReadable
 
 extension Token: ClaimReadable {
     public static func ~><T: Claim>(token: Token, claim: T.Type) -> T? {
@@ -161,6 +218,8 @@ extension Token: ClaimReadable {
         return T.init(rawValue: rawValue)
     }
 }
+
+// MARK: - ClaimWritable
 
 extension Token: ClaimWritable {
     public static func +=<T: Claim>(token: inout Token, claim: T) {

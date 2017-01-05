@@ -155,6 +155,15 @@ public struct Base64<Alphabet: CodingAlphabet>: Base64Coding {
     }
 }
 
+// MARK: - Public types
+
+/// Base64 encoding/decoding errors
+///
+/// - badData: failed to decode data because it's not base64 encoded
+public enum Base64Error: Error {
+    case badData
+}
+
 // MARK: - Private extensions
 
 private extension CodingAlphabet {

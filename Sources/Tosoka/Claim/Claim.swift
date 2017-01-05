@@ -1,16 +1,30 @@
 import Foundation
 
+/// A claim for a json web token
 public protocol Claim: RawRepresentable {
+    
+    /// Type of the value that claim contains
     associatedtype Content
     
+    /// Name of the claim
     static var name: String { get }
     
+    /// Value of the claim
     var content: Content { get }
     
+    /// Creates new instance of the claim with desired value
+    ///
+    /// - Parameter content: value for the claim
     init(content: Content)
     
+    /// Checks if `self` does not violates `requirments` in the form of `Self`
+    ///
+    /// - Parameter requirment: claim that is required / expected
+    /// - Returns: true is `self` is valid relatively to `requirment`
     func isValid(for requirment: Self?) -> Bool
 }
+
+// MARK: - Default implementation
 
 extension Claim {
     public func isValid(for requirment: Self?) -> Bool {

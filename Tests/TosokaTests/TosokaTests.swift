@@ -15,6 +15,15 @@ class TosokaTests: XCTestCase {
             XCTFail()
         }
     }
+    
+    func testDecodingWithoutSignature() {
+        do {
+            let token = try Tosoka.makeToken(signature: .none)
+            let _ = try Tosoka(token: token, signature: .none)
+        } catch {
+            XCTFail()
+        }
+    }
 
     func testDecodingPayload() {
         do {
@@ -116,11 +125,17 @@ class TosokaTests: XCTestCase {
 
     func testWrongSignature() {
         do {
-            let wrongSignature = Signature.sha512("secret")
-
             let encodedToken = try Tosoka.makeToken(signature: signature)
+            
             XCTAssertThrowsError(
-                try Tosoka(token: encodedToken, signature: wrongSignature),
+                try Tosoka(token: encodedToken, signature: .sha512("secret")),
+                "Should throw because of bad signature"
+            ) { error in
+                XCTAssert((error as? TokenError) == .corrupted)
+            }
+            
+            XCTAssertThrowsError(
+                try Tosoka(token: encodedToken, signature: .none),
                 "Should throw because of bad signature"
             ) { error in
                 XCTAssert((error as? TokenError) == .corrupted)
@@ -155,6 +170,7 @@ class TosokaTests: XCTestCase {
     static var allTests : [(String, (TosokaTests) -> () throws -> Void)] {
         return [
            ("testDecoding", testDecoding),
+           ("testDecodingWithoutSignature", testDecodingWithoutSignature),
            ("testDecodingPayload", testDecodingPayload),
            ("testExpiringClaimDecoding", testExpiringClaimDecoding),
            ("testNotBeforeClaimDecoding", testNotBeforeClaimDecoding),

@@ -16,10 +16,3 @@ public protocol Base64Coding {
     /// - Throws: `Base64Error` or implementing type errors
     func decode(_ data: Data) throws -> Data
 }
-
-/// Base64 encoding/decoding errors
-///
-/// - badData: failed to decode data because it's not base64 encoded
-public enum Base64Error: Error {
-    case badData
-}

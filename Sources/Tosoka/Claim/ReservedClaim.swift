@@ -1,5 +1,16 @@
 import Foundation
 
+/// Registered claims
+///
+/// Claims that is registered according to rfc7519
+///
+/// - issuer: "issuer" claim
+/// - subject: "subject" claim
+/// - audience: "audience" claim
+/// - expiring: "expiration time" claim
+/// - notBefore: "not before" claim
+/// - issued: "issued at" claim
+/// - id: "jwt id" claim
 public enum ReservedClaim {
     case issuer
     case subject
@@ -12,6 +23,7 @@ public enum ReservedClaim {
 
 // MARK: - Predefined claims
 
+/// Issuer claim
 public struct Issuer: Claim {
     public static var name: String {
         return ReservedClaim.issuer.name
@@ -24,6 +36,7 @@ public struct Issuer: Claim {
     }
 }
 
+/// Subject claim
 public struct Subject: Claim {
     public static var name: String {
         return ReservedClaim.subject.name
@@ -36,6 +49,7 @@ public struct Subject: Claim {
     }
 }
 
+/// Audience claim
 public struct Audience: Claim {
     public static var name: String {
         return ReservedClaim.audience.name
@@ -76,6 +90,7 @@ public extension Audience {
     }
 }
 
+/// Expiring time claim
 public struct Expiring: Claim {
     public static var name: String {
         return ReservedClaim.expiring.name
@@ -100,6 +115,7 @@ public struct Expiring: Claim {
     }
 }
 
+/// Not before claim
 public struct NotBefore: Claim {
     public static var name: String {
         return ReservedClaim.notBefore.name
@@ -125,6 +141,7 @@ public struct NotBefore: Claim {
     }
 }
 
+/// Issued at claim
 public struct Issued: Claim {
     public static var name: String {
         return ReservedClaim.issued.name
@@ -146,6 +163,7 @@ public struct Issued: Claim {
     }
 }
 
+/// JWT ID claim
 public struct ID: Claim {
     public static var name: String {
         return ReservedClaim.id.name
@@ -161,6 +179,8 @@ public struct ID: Claim {
 // MARK: - Internal extensions
 
 extension ReservedClaim {
+    
+    /// Name of the claim according to rfc7519
     public var name: String {
         switch self {
         case .issuer:
