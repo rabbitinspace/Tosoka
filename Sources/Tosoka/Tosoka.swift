@@ -11,7 +11,6 @@ public final class Tosoka {
     
     fileprivate var actualToken: Token<JSONCoder, Base64<URLSafeCodingAlphabet>>
     
-    
     public init(signature: Signature) {
         let jsonCoder = JSONCoder()
         let base64Coder = Base64(coder: URLSafeCodingAlphabet.self, isPaddingEnabled: false)

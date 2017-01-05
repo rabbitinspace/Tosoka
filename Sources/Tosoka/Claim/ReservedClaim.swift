@@ -43,16 +43,24 @@ public struct Audience: Claim {
 
     public let content: Set<String>
     
-    public init(content: Set<String>) {
-        self.content = content
-    }
-    
     public var rawValue: [String] {
         return Array(content)
     }
     
+    public init(content: Set<String>) {
+        self.content = content
+    }
+    
     public init?(rawValue: [String]) {
         self.init(content: rawValue)
+    }
+    
+    public func isValid(for requirment: Audience?) -> Bool {
+        guard let requirment = requirment else {
+            return content.isEmpty
+        }
+        
+        return content.isSuperset(of: requirment.content)
     }
 }
 
@@ -108,16 +116,14 @@ public struct NotBefore: Claim {
         self.content = content
     }
     
-        public init?(rawValue: TimeInterval) {
-            self.init(content: Date(timeIntervalSince1970: rawValue))
-        }
+    public init?(rawValue: TimeInterval) {
+        self.init(content: Date(timeIntervalSince1970: rawValue))
+    }
     
     public func isValid(for requirment: NotBefore? = nil) -> Bool {
         return Date() >= content
     }
 }
-
-
 
 public struct Issued: Claim {
     public static var name: String {
@@ -135,9 +141,9 @@ public struct Issued: Claim {
     }
   
     
-        public init?(rawValue: TimeInterval) {
-            self.init(content: Date(timeIntervalSince1970: rawValue))
-        }
+    public init?(rawValue: TimeInterval) {
+        self.init(content: Date(timeIntervalSince1970: rawValue))
+    }
 }
 
 public struct ID: Claim {
