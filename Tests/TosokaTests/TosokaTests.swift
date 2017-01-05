@@ -72,8 +72,8 @@ class TosokaTests: XCTestCase {
 
     func testNotBeforeClaimDecoding() {
         do {
-            let pastClaim = NotBefore(content: Date.distantPast)
-            let futureClaim = NotBefore(content: Date.distantFuture)
+            let pastClaim = NotBefore(content: Date(timeIntervalSinceNow: -100000))
+            let futureClaim = NotBefore(content: Date(timeIntervalSinceNow: 100000))
 
             var encodedToken = try Tosoka.makeToken(signature: signature) { $0 += pastClaim }
             let validToken = try Tosoka(token: encodedToken, signature: signature)
