@@ -72,9 +72,7 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
         }
         
         let token = "\(encodedHeader).\(encodedPayload)"
-        guard let signature = (try self.signature.signing(token)).data(using: .utf8) else {
-            throw TokenError.encodingFailed
-        }
+        let signature = try self.signature.signing(token)
         
         guard let encodedSignature = base64Coder.encode(signature).utf8String else {
             throw TokenError.encodingFailed
@@ -108,8 +106,7 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
         let decodedSignature = try base64Coder.decode(encodedSignature)
         
         guard let header = jsonCoder.makeJSON(with: decodedHeader),
-            let payload = jsonCoder.makeJSON(with: decodedPayload),
-            let signature = String(data: decodedSignature, encoding: .utf8) else {
+            let payload = jsonCoder.makeJSON(with: decodedPayload) else {
                 throw TokenError.decodingFailed
         }
         
@@ -119,7 +116,7 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
             throw TokenError.corrupted
         }
         
-        try validateSignature(signature, forHeader: parts[0], payload: parts[1])
+        try validateSignature(decodedSignature, forHeader: parts[0], payload: parts[1])
         try validateToken(indendedFor: audience)
     }
     
@@ -130,7 +127,7 @@ public final class Token<T: JSONCoding, U: Base64Coding> {
     ///   - header: base64 encoded header of a token
     ///   - payload: base64 encoded payload of a token
     /// - Throws: `TokenError`, `Signature.SigningError`
-    private func validateSignature(_ signature: String, forHeader header: String, payload: String) throws {
+    private func validateSignature(_ signature: Data, forHeader header: String, payload: String) throws {
         let expectedSignature = try self.signature.signing("\(header).\(payload)")
         guard signature == expectedSignature else {
             throw TokenError.corrupted
