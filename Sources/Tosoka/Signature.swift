@@ -48,24 +48,27 @@ extension Signature {
     /// - Parameter string: string to sign
     /// - Returns: signature for `string`
     /// - Throws: `SigningError`
-    func signing(_ string: String) throws -> String {
+    func signing(_ string: String) throws -> Data {
         let engine: UnsafePointer<EVP_MD>
+        let length: Int
         let secretKey: String
         
         switch self {
         case .none:
-            return ""
+            return Data()
             
         case let .sha256(key):
             secretKey = key
             engine = EVP_sha256()
+            length = Int(SHA256_DIGEST_LENGTH)
             
         case let .sha512(key):
             secretKey = key
             engine = EVP_sha512()
+            length = Int(SHA512_DIGEST_LENGTH)
         }
         
-        return try macString(string, withKey: secretKey, using: engine)
+        return try macString(string, withKey: secretKey, using: engine, ofLength: length)
     }
     
     // MARK: - Private
@@ -75,15 +78,16 @@ extension Signature {
     /// - Parameters:
     ///   - string: string to be mac-ed
     ///   - key: secret key used for hash calculating
-    ///   - engine: hash functionfor mac calculation
+    ///   - engine: hash function for mac calculation
+    ///   - length: length of the hash funcion's output (in bytes)
     /// - Returns: mac for provided `string`
     /// - Throws: `SigningError`
-    private func macString(_ string: String, withKey key: String, using engine: UnsafePointer<EVP_MD>) throws -> String {
+    private func macString(_ string: String, withKey key: String, using engine: UnsafePointer<EVP_MD>, ofLength length: Int) throws -> Data {
         guard let digest = HMAC(engine, key, Int32(key.utf8.count), string, string.utf8.count, nil, nil) else {
             throw SigningError.failed
         }
         
-        return String(cString: digest)
+        return Data(bytes: digest, count: length)
     }
 }
 
